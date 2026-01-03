@@ -6,6 +6,8 @@ Uses OpenRouter for LLM calls (OpenAI-compatible API).
 
 from fastapi import APIRouter
 from openai import OpenAI
+import uuid
+import traceback
 
 from app.schemas.chat import ChatRequest, ChatResponse, Block
 from app.core.config import get_settings
@@ -61,31 +63,37 @@ async def chat(request: ChatRequest) -> ChatResponse:
     5. Return structured JSON blocks
     """
     settings = get_settings()
+    request_id = str(uuid.uuid4())[:8]
+    
+    print(f"[{request_id}] Incoming request: {request.message[:50]}...")
     
     try:
         # Step 1: Detect intent/mode
         mode = detect_mode(request.message)
+        print(f"[{request_id}] Detected mode: {mode}")
         
         # Step 2: Handle general mode (no RAG needed)
         if mode == "general":
             system_prompt = get_general_prompt()
             llm_response = call_llm(system_prompt, request.message)
+            print(f"[{request_id}] LLM Response (General): {llm_response[:100]}...")
+            
             blocks = parse_llm_json_response(llm_response)
             
             return ChatResponse(
                 blocks=blocks,
                 sources=[],
-                mode="general"
+                mode="general",
+                request_id=request_id
             )
         
         # Step 3: RAG candidate - query Pinecone
         matches, highest_score = query_pinecone(request.message)
-        
-        print(f"DEBUG: Mode={mode}, Matches={len(matches)}, HighScore={highest_score}")
+        print(f"[{request_id}] Pinecone Stats: Matches={len(matches)}, HighScore={highest_score}")
         
         # Write to debug log file
         with open("debug.log", "a") as f:
-            f.write(f"Mode={mode}, Matches={len(matches)}, HighScore={highest_score}\n")
+            f.write(f"[{request_id}] Mode={mode}, Matches={len(matches)}, HighScore={highest_score}\n")
 
         # Step 4: Decide if RAG should be used
         use_rag = should_use_rag(
@@ -95,6 +103,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
         )
         
         if not use_rag:
+            print(f"[{request_id}] RAG rejected (Score below threshold)")
             # Fallback: no relevant context found
             return create_fallback_response()
         
@@ -104,24 +113,29 @@ async def chat(request: ChatRequest) -> ChatResponse:
             settings.rag_similarity_threshold
         )
         
-        print(f"DEBUG: Context Preview: {context[:200]}...")
+        print(f"[{request_id}] Context Length: {len(context)}")
         
         if not context.strip():
+            print(f"[{request_id}] Empty context after filtering")
             return create_fallback_response()
         
         # Generate grounded response
         system_prompt = get_rag_prompt(context)
         llm_response = call_llm(system_prompt, request.message)
+        print(f"[{request_id}] LLM Response (RAG): {llm_response[:100]}...")
+        
         blocks = parse_llm_json_response(llm_response)
         sources = format_sources(raw_sources)
         
         return ChatResponse(
             blocks=blocks,
             sources=sources,
-            mode="rag"
+            mode="rag",
+            request_id=request_id
         )
         
     except Exception as e:
         # Log error in production (for now, return error response)
-        print(f"Chat API error: {e}")
-        return create_error_response(str(e))
+        print(f"[{request_id}] Chat API error: {e}")
+        print(traceback.format_exc())
+        return create_error_response(f"{str(e)} (ID: {request_id})")
