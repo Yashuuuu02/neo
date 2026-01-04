@@ -1,4 +1,4 @@
-import { Match } from './pinecone.service';
+import type { Match } from './pinecone.service';
 
 const STRONG_TRIGGERS = new Set<string>([
     'cogneoverse',

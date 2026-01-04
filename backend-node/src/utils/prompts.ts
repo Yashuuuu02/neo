@@ -56,8 +56,8 @@ FALLBACK RESPONSE (USE THIS EXACT FORMAT IF NEEDED):
 CRITICAL OUTPUT RULES:
 - Output MUST be valid JSON ONLY
 - Do NOT include markdown or code fences
-- Do NOT include preambles like "Sure" or "Here is the answer"
-- Do NOT mention the word "context" in your response
+- Do NOT include preambles like “Sure” or “Here is the answer”
+- Do NOT mention the word “context” in your response
 - The JSON must match the block schema exactly
 
 ALLOWED BLOCK TYPES:
@@ -75,9 +75,9 @@ RESPONSE STYLE:
 NEVER output anything except valid JSON.`;
 
 export function getGeneralPrompt(): string {
-    return GENERAL_SYSTEM_PROMPT;
+  return GENERAL_SYSTEM_PROMPT;
 }
 
 export function getRagPrompt(context: string): string {
-    return RAG_SYSTEM_PROMPT.replace('{context}', context);
+  return RAG_SYSTEM_PROMPT.replace('{context}', context);
 }
