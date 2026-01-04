@@ -31,7 +31,11 @@ class LlmService {
         });
     }
 
-    public async callLlm(systemPrompt: string, userMessage: string): Promise<string> {
+    public async callLlm(
+        systemPrompt: string,
+        userMessage: string,
+        conversationHistory: { role: 'user' | 'assistant'; content: string }[] = []
+    ): Promise<string> {
         if (!this.client) this.init();
 
         if (!this.client) {
@@ -39,12 +43,22 @@ class LlmService {
         }
 
         try {
+            // Build messages array with conversation history
+            const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+                { role: 'system', content: systemPrompt },
+            ];
+
+            // Add conversation history (for continuity, not authoritative)
+            for (const msg of conversationHistory) {
+                messages.push({ role: msg.role, content: msg.content });
+            }
+
+            // Add the current user message
+            messages.push({ role: 'user', content: userMessage });
+
             const response = await this.client.chat.completions.create({
                 model: this.model,
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userMessage },
-                ],
+                messages,
                 temperature: parseFloat(process.env.LLM_TEMPERATURE || '0.7'),
             });
 

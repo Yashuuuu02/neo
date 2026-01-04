@@ -12,16 +12,23 @@ import {
 } from '../utils/formatter';
 // Helper to get prompts
 import { getGeneralPrompt, getRagPrompt } from '../utils/prompts';
+// Context window utilities
+import { getContextWindow, appendToContextWindow } from '../utils/contextWindow';
 
 const router = Router();
 
 router.post('/chat', async (req: Request, res: Response) => {
-    const { message } = req.body as ChatRequest;
+    const { message, conversation_id } = req.body as ChatRequest;
     const requestId = uuidv4().substring(0, 8);
+    // Use provided conversation_id or generate one
+    const convId = conversation_id || requestId;
 
     console.log(`[${requestId}] Incoming request: ${message.substring(0, 50)}...`);
 
     try {
+        // Retrieve conversation context for continuity
+        const conversationHistory = getContextWindow(convId);
+
         // Step 1: Detect intent/mode
         const mode = detectMode(message);
         console.log(`[${requestId}] Detected mode: ${mode}`);
@@ -29,10 +36,14 @@ router.post('/chat', async (req: Request, res: Response) => {
         // Step 2: Handle general mode
         if (mode === 'general') {
             const systemPrompt = getGeneralPrompt();
-            const llmResponse = await llmService.callLlm(systemPrompt, message);
+            const llmResponse = await llmService.callLlm(systemPrompt, message, conversationHistory);
             console.log(`[${requestId}] LLM Response (General): ${llmResponse.substring(0, 100)}...`);
 
             const blocks = parseLlmJsonResponse(llmResponse);
+
+            // Append to context window after success
+            appendToContextWindow(convId, 'user', message);
+            appendToContextWindow(convId, 'assistant', llmResponse);
 
             const response: ChatResponse = {
                 blocks,
@@ -68,13 +79,17 @@ router.post('/chat', async (req: Request, res: Response) => {
             return;
         }
 
-        // Generate grounded response
+        // Generate grounded response (RAG context is authoritative, conversation history is for continuity)
         const systemPrompt = getRagPrompt(context);
-        const llmResponse = await llmService.callLlm(systemPrompt, message);
+        const llmResponse = await llmService.callLlm(systemPrompt, message, conversationHistory);
         console.log(`[${requestId}] LLM Response (RAG): ${llmResponse.substring(0, 100)}...`);
 
         const blocks = parseLlmJsonResponse(llmResponse);
         const sources = formatSources(rawSources);
+
+        // Append to context window after success
+        appendToContextWindow(convId, 'user', message);
+        appendToContextWindow(convId, 'assistant', llmResponse);
 
         const response: ChatResponse = {
             blocks,

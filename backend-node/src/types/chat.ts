@@ -13,6 +13,7 @@ export interface Source {
 
 export interface ChatRequest {
     message: string;
+    conversation_id?: string;
 }
 
 export interface ChatResponse {
