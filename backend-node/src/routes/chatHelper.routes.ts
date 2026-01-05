@@ -11,7 +11,7 @@ import {
     formatSources,
 } from '../utils/formatter';
 // Helper to get prompts
-import { getGeneralPrompt, getRagPrompt } from '../utils/prompts';
+import { getGeneralPrompt, getRagPrompt, getGeneralStreamingPrompt, getRagStreamingPrompt } from '../utils/prompts';
 // Context window utilities
 import { getContextWindow, appendToContextWindow } from '../utils/contextWindow';
 
@@ -134,17 +134,21 @@ router.post('/chat/stream', async (req: Request, res: Response) => {
         let responseMode = 'general';
 
         if (mode === 'general') {
-            systemPrompt = getGeneralPrompt();
+            systemPrompt = getGeneralStreamingPrompt();
         } else {
             // RAG path
-            const [matches, highestScore] = await pineconeService.queryPinecone(message);
+            const [matches, highestScore] = await pineconeService.queryPinecone(message, 5); // Explicitly topK 5
+            console.log(`[${requestId}] [STREAM] Pinecone: ${matches.length} matches, highest score: ${highestScore}`);
+            if (matches.length > 0) {
+                console.log(`[${requestId}] [STREAM] Top match scores:`, matches.slice(0, 5).map(m => ({ id: m.id, score: m.score })));
+            }
             const threshold = parseFloat(process.env.RAG_SIMILARITY_THRESHOLD || '0.5');
+            console.log(`[${requestId}] [STREAM] RAG threshold: ${threshold}`);
             const useRag = shouldUseRag(mode, highestScore, threshold);
 
             if (!useRag) {
-                // Send fallback as single chunk
-                const fallback = createFallbackResponse();
-                res.write(`data: ${JSON.stringify({ type: 'content', data: JSON.stringify(fallback) })}\n\n`);
+                const fallbackText = "I don't have that information in Cogneoverse knowledge.";
+                res.write(`data: ${JSON.stringify({ type: 'chunk', data: fallbackText })}\n\n`);
                 res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
                 res.end();
                 return;
@@ -152,14 +156,14 @@ router.post('/chat/stream', async (req: Request, res: Response) => {
 
             const [context, rawSources] = getContextFromMatches(matches, threshold);
             if (!context.trim()) {
-                const fallback = createFallbackResponse();
-                res.write(`data: ${JSON.stringify({ type: 'content', data: JSON.stringify(fallback) })}\n\n`);
+                const fallbackText = "I don't have that information in Cogneoverse knowledge.";
+                res.write(`data: ${JSON.stringify({ type: 'chunk', data: fallbackText })}\n\n`);
                 res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
                 res.end();
                 return;
             }
 
-            systemPrompt = getRagPrompt(context);
+            systemPrompt = getRagStreamingPrompt(context);
             sources = formatSources(rawSources);
             responseMode = 'rag';
         }

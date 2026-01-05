@@ -1,4 +1,6 @@
 import type { Block } from '@/types/chat';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export function BlockRenderer({ block }: { block: Block }) {
   switch (block.type) {
@@ -20,16 +22,22 @@ export function BlockRenderer({ block }: { block: Block }) {
         </ol>
       );
     case 'quote':
-        return (
-            <blockquote className="border-l-2 border-emerald-500/50 pl-4 italic text-zinc-400 my-4 text-lg">
-                "{block.content}"
-            </blockquote>
-        );
+      return (
+        <blockquote className="border-l-2 border-emerald-500/50 pl-4 italic text-zinc-400 my-4 text-lg">
+          "{block.content}"
+        </blockquote>
+      );
     case 'paragraph':
       return (
-        <p className="text-zinc-300 leading-7 mb-4 font-light">
+        <ReactMarkdown
+          className="text-zinc-300 leading-7 mb-4 font-light prose prose-invert max-w-none prose-p:leading-7 prose-p:mb-4"
+          remarkPlugins={[remarkGfm]}
+          components={{
+            p: ({ children }: { children: React.ReactNode }) => <p className="mb-0">{children}</p>
+          }}
+        >
           {block.content}
-        </p>
+        </ReactMarkdown>
       );
     case 'heading':
       return (
@@ -44,7 +52,7 @@ export function BlockRenderer({ block }: { block: Block }) {
         </div>
       );
     case 'divider':
-        return <hr className="border-white/10 my-8" />;
+      return <hr className="border-white/10 my-8" />;
     default:
       return null;
   }

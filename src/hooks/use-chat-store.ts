@@ -60,8 +60,8 @@ export function useChatStore() {
     }
   };
 
-  const sendMessage = (content: string, role: Role = 'user', reasoning?: string[]) => {
-    let chatId = activeId;
+  const sendMessage = (content: string, role: Role = 'user', reasoning?: string[], forceId?: string) => {
+    let chatId = forceId || activeId;
 
     // Auto-create if no chat active
     if (!chatId) {
@@ -107,11 +107,12 @@ export function useChatStore() {
   /**
    * Update the last message in the active conversation (for streaming)
    */
-  const updateLastMessage = (content: string) => {
-    if (!activeId) return;
+  const updateLastMessage = (content: string, forceId?: string) => {
+    const targetId = forceId || activeId;
+    if (!targetId) return;
 
     setConversations(prev => prev.map(c => {
-      if (c.id === activeId && c.messages.length > 0) {
+      if (c.id === targetId && c.messages.length > 0) {
         const updatedMessages = [...c.messages];
         const lastIndex = updatedMessages.length - 1;
         updatedMessages[lastIndex] = {

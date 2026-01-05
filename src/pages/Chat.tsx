@@ -8,7 +8,7 @@ import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { Menu } from "lucide-react";
 
-const STREAM_API_URL = "http://localhost:8000/api/chat/stream";
+const STREAM_API_URL = "http://localhost:8001/api/chat/stream";
 
 export default function Chat() {
   const {
@@ -36,19 +36,21 @@ export default function Chat() {
     const rawContent = typeof data === 'string' ? data : data.message;
     if (!rawContent.trim() || isLoading) return;
 
-    sendMessage(rawContent, 'user');
+    // 1. Send user message and get the persistent ID
+    const currentChatId = sendMessage(rawContent, 'user');
     setIsLoading(true);
 
     try {
-      // Create placeholder for assistant message
-      sendMessage(JSON.stringify({ blocks: [{ type: 'paragraph', content: '...' }] }), 'assistant');
+      // 2. Create placeholder for assistant message ensuring it goes to the same chat
+      sendMessage(JSON.stringify({ blocks: [{ type: 'paragraph', content: '...' }] }), 'assistant', undefined, currentChatId);
 
       const response = await fetch(STREAM_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: rawContent,
-          conversation_id: activeId || 'new'
+          // 3. Use the confirmed ID
+          conversation_id: currentChatId
         })
       });
 
@@ -75,23 +77,22 @@ export default function Chat() {
 
               if (event.type === 'chunk') {
                 fullContent += event.data;
-                // Update the message with accumulated content
-                // Wrap in JSON blocks format for the chat renderer
+                // 4. Update using the explicit ID to bypass stale state
                 updateLastMessage(JSON.stringify({
                   blocks: [{ type: 'paragraph', content: fullContent }]
-                }));
+                }), currentChatId);
               } else if (event.type === 'done') {
                 // Parse final content as JSON blocks if valid
                 try {
                   const parsed = JSON.parse(fullContent);
                   if (parsed.blocks) {
-                    updateLastMessage(JSON.stringify(parsed));
+                    updateLastMessage(JSON.stringify(parsed), currentChatId);
                   }
                 } catch {
                   // Keep as plain text paragraph
                   updateLastMessage(JSON.stringify({
                     blocks: [{ type: 'paragraph', content: fullContent }]
-                  }));
+                  }), currentChatId);
                 }
               } else if (event.type === 'error') {
                 throw new Error(event.message);
@@ -104,9 +105,11 @@ export default function Chat() {
       }
     } catch (error) {
       console.error('Chat API error:', error);
+      // Ensure error message goes to critical chat
       updateLastMessage(JSON.stringify({
         blocks: [{ type: 'paragraph', content: 'Sorry, I encountered an error. Please try again.' }]
-      }));
+      }), currentChatId); // Use variable if available, but here we might need to be careful if it failed before assignment. 
+      // Actually currentChatId is const in scope, so it is available safely.
     } finally {
       setIsLoading(false);
     }
