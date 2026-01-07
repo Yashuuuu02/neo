@@ -24,10 +24,11 @@ const STOPWORDS = new Set([
 
 // Domain-specific terms that should always be preserved (Cogneoverse specific)
 const DOMAIN_TERMS = new Set([
-    'cogneoverse', 'neo', 'orion', 'spline', 'rag', 'llm', 'embedding',
+    'cogneoverse', 'cogneo', 'neo', 'orion', 'spline', 'rag', 'llm', 'embedding',
     'vector', 'pinecone', 'ai', 'ml', 'api', 'agent', 'cognition',
     'neural', 'transformer', 'architecture', 'system', 'internal',
-    'documentation', 'docs', 'project', 'module', 'component', 'service'
+    'documentation', 'docs', 'project', 'module', 'component', 'service',
+    'mind', 'ayush', 'shreyash', 'jay' // Team members and divisions
 ]);
 
 /**
