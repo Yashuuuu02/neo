@@ -6,6 +6,7 @@ This is the **Active** backend service for the Chatbot Spline application, built
 
 - **API Endpoints**: RESTful API for chat interactions.
 - **RAG Pipeline**: Integrates with Pinecone for vector search and Xenova transformers for local embeddings.
+- **Hybrid Search**: Combines semantic vector search with keyword-based filtering for improved context retrieval specificity.
 - **Streaming**: Supports streaming responses (e.g., SSE) for real-time chat.
 - **TypeScript**: Typed codebase for better maintainability.
 
@@ -55,12 +56,13 @@ OPENAI_API_KEY=your_openai_api_key (if used)
 ## API Documentation
 
 - `POST /api/chat`: Main endpoint for sending messages. expects standard JSON payload.
+- `POST /api/chat/stream`: Streaming endpoint using Server-Sent Events (SSE). Returns chunks of generated text.
 - `GET /health`: Health check endpoint.
 
 ## Project Structure
 
 - `src/`: Source code.
   - `controllers/`: Request handlers.
-  - `services/`: Business logic (RAG, Embedding, LLM).
+  - `services/`: Business logic (RAG, Embedding, LLM, Hybrid Search).
   - `routes/`: API route definitions.
-  - `utils/`: Helper functions.
+  - `utils/`: Helper functions (keywords.ts, formatter.ts, etc.).

@@ -7,7 +7,7 @@ A modern chatbot application featuring a **React + TypeScript + Vite** frontend 
 This repository contains the following main components:
 
 - **`src/`**: The Frontend application built with React, TypeScript, and Vite.
-- **`backend-node/`**: The **Active** Backend implementation using Node.js, Express, and Pinecone.
+- **`backend-node/`**: The **Active** Backend implementation using Node.js, Express, and **Hybrid Search** (Pinecone + Keyword) RAG pipeline.
 - **`backend/`**: The **Legacy** Backend implementation using Python (FastAPI).
 
 ## Getting Started
