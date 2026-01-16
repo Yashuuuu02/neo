@@ -44,6 +44,9 @@ class MultiHopService {
             // Prepare context for the LLM to evaluate
             const [currentContext] = getContextFromHybridResults(allResults, 0.4); // slightly lower threshold for context visibility
 
+            console.log(`[MultiHop] Hop ${currentHop + 1}/${maxHops}: Evaluating if context is sufficient...`);
+            console.log(`[MultiHop] Current context length: ${currentContext?.length || 0} chars, ${allResults.length} results`);
+
             // 2. Ask LLM if we need more info
             const decompositionPrompt = getQueryDecompositionPrompt(currentContext || "No context found yet.", originalQuery);
             try {
@@ -58,11 +61,14 @@ class MultiHopService {
                     analysis = JSON.parse(cleanJson);
                 } catch (e) {
                     console.error("[MultiHop] Failed to parse decomposition JSON", e);
+                    console.log("[MultiHop] Raw response was:", analysisRaw.substring(0, 200));
                     break; // Stop if we can't parse
                 }
 
+                console.log(`[MultiHop] LLM Analysis: sufficient=${analysis.sufficient}, suggested queries=${analysis.queries?.length || 0}`);
+
                 if (analysis.sufficient) {
-                    console.log("[MultiHop] Context deemed sufficient. Stopping hops.");
+                    console.log("[MultiHop] ✅ Context deemed sufficient. Stopping hops.");
                     break;
                 }
 

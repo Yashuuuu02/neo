@@ -8,7 +8,7 @@ import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { Menu } from "lucide-react";
 
-const STREAM_API_URL = "http://localhost:8001/api/chat/stream";
+const STREAM_API_URL = "http://localhost:8000/api/chat/stream";
 
 export default function Chat() {
   const {
