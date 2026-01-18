@@ -1,8 +1,8 @@
-# Neo - Mental Health AI Agent
+# Neo - AI Agent
 
-A next-generation AI agent designed to provide intelligent, context-aware mental health support. **Neo** combines a stunning, high-performance frontend with a powerful Multi-Hop RAG backend to deliver accurate and empathetic responses.
+A next-generation AI agent designed to provide intelligent, context-aware support. **Neo** combines a stunning, high-performance frontend with a powerful Multi-Hop RAG backend to deliver accurate and empathetic responses.
 
-![Neo Banner](https://placehold.co/1200x400/101010/ffffff?text=Neo+Mental+Health+AI)
+![Neo Banner](https://placehold.co/1200x400/101010/ffffff?text=Neo+AI)
 
 ## ✨ Key Features
 
